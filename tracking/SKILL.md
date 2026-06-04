@@ -9,16 +9,19 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 # /tracking — 추적 코드 자동 세팅
 
 새 프로젝트에 광고/분석 추적 코드를 설치하는 스킬.
+마케터로부터 받은 추적 코드 스니펫을 프레임워크에 맞게 `<head>`에 삽입한다.
 
 ## 핵심 원칙 (절대 위반 금지)
 
-**모든 추적 코드 ID(Meta Pixel, Google Ads gtag, GA4, Clarity, TikTok, 네이버, 당근 등)는 반드시 `<head>` 인라인 스크립트에 하드코딩한다.**
+**모든 추적 코드는 반드시 `<head>` 인라인 스크립트에 하드코딩한다.**
 
-- 금지: `NEXT_PUBLIC_*` 환경변수 사용
+- 금지: `NEXT_PUBLIC_*` 환경변수로 Tracking ID 관리
 - 금지: `process.env.*`로 Tracking ID 참조
-- 필수: layout 파일의 `<head>`에 ID를 직접 문자열로 삽입
+- 필수: layout 파일의 `<head>`에 코드를 직접 삽입
 
 이유: DOM 로드 타이밍과 환경변수 hydration 타이밍이 달라서, 환경변수로 넣으면 추적 SDK가 초기화 시점에 ID를 인식하지 못함. 실제로 겪은 문제.
+
+**스니펫은 직접 작성하지 않는다.** 각 플랫폼(Meta, Google, TikTok 등)의 공식 코드는 수시로 변경되므로, 반드시 마케터 또는 플랫폼 대시보드에서 받은 최신 코드를 사용한다.
 
 ---
 
@@ -48,92 +51,27 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 > 4. Microsoft Clarity
 > 5. 당근 (Karrot) Pixel
 > 6. Naver 전환 추적
+> 7. 기타 (직접 입력)
 
 인자가 이미 전달됐으면 (`/tracking meta google clarity`) 질문 생략하고 바로 진행.
 
-### 3단계: Tracking ID 수집
+### 3단계: 추적 코드 수집
 
-선택한 각 항목에 대해 ID를 질문:
+선택한 각 항목에 대해 사용자에게 코드를 요청:
 
-- Meta Pixel → "Meta Pixel ID를 알려주세요 (예: 1234567890)"
-- Google Ads → "Google Ads ID를 알려주세요 (예: AW-18196402617)" + "Conversion Label? (예: abcDEF123)"
-- GA4 → Google Ads ID와 동일 (gtag 공유) 또는 별도 GA4 ID (예: G-XXXXXXXXXX)
-- TikTok → "TikTok Pixel ID를 알려주세요"
-- Clarity → "Clarity Project ID를 알려주세요 (예: x0k85x9hcm)"
-- 당근 → "당근 Pixel ID를 알려주세요"
-- Naver → "네이버 전환추적 ID를 알려주세요"
+> "{플랫폼명}" 추적 코드를 붙여넣어 주세요.
+> (마케터분 또는 플랫폼 대시보드에서 받은 `<script>` 코드 전체)
+
+코드를 받으면 프레임워크에 맞게 변환:
+- **Next.js**: `<script>` → `<script dangerouslySetInnerHTML={{ __html: \`...\` }} />`
+- **Nuxt**: `nuxt.config.ts`의 `app.head.script`에 추가
+- **바닐라/Vite**: `index.html`의 `<head>`에 그대로 삽입
 
 ### 4단계: 파일 생성
 
-아래 순서로 파일을 생성/수정한다.
+#### 4-1. `<head>` 스크립트 주입
 
-#### 4-1. `<head>` 스크립트 주입 (프레임워크별)
-
-선택한 추적 코드의 초기화 스크립트를 `<head>`에 하드코딩 삽입.
-**반드시 ID를 문자열 리터럴로 직접 넣는다. 환경변수 참조 절대 금지.**
-
-**Meta Pixel 스니펫:**
-```html
-<script dangerouslySetInnerHTML={{ __html: `
-  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
-  (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init','여기에_PIXEL_ID');
-  fbq('track','PageView');
-`}} />
-```
-
-**Google Ads / GA4 스니펫:**
-```html
-<script async src="https://www.googletagmanager.com/gtag/js?id=여기에_ADS_ID" />
-<script dangerouslySetInnerHTML={{ __html: `
-  window.dataLayer=window.dataLayer||[];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js',new Date());
-  gtag('config','여기에_ADS_ID');
-`}} />
-```
-
-**Clarity 스니펫:**
-```html
-<script dangerouslySetInnerHTML={{ __html: `
-  (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})
-  (window,document,"clarity","script","여기에_CLARITY_ID");
-`}} />
-```
-
-**TikTok Pixel 스니펫:**
-```html
-<script dangerouslySetInnerHTML={{ __html: `
-  !function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];
-  ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group",
-  "enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"];
-  ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
-  for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);
-  ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};
-  ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",
-  o=n&&n.partner;ttq._i=ttq._i||{};ttq._i[e]=[];ttq._i[e]._u=r;ttq._t=ttq._t||{};
-  ttq._t[e]=+new Date;ttq._o=ttq._o||{};ttq._o[e]=n||{};
-  var s=d.createElement("script");s.type="text/javascript";s.async=!0;s.src=r+"?sdkid="+e+"&lib="+t;
-  var a=d.getElementsByTagName("script")[0];a.parentNode.insertBefore(s,a)};
-  ttq.load('여기에_TIKTOK_ID');ttq.page();
-  }(window,document,'ttq');
-`}} />
-```
-
-**당근 Pixel 스니펫:**
-```html
-<script dangerouslySetInnerHTML={{ __html: `
-  (function(){var s=document.createElement('script');s.async=true;
-  s.src='https://karrot-pixel.business.daangn.com/pixel/0.2/karrot-pixel.umd.js';
-  s.onload=function(){window.karrotPixel&&(karrotPixel.init('여기에_KARROT_ID'),karrotPixel.track('ViewPage'))};
-  document.head.appendChild(s)})();
-`}} />
-```
+사용자에게 받은 코드를 프레임워크에 맞는 방식으로 layout 파일의 `<head>` 영역에 삽입.
 
 #### 4-2. 이벤트 래퍼 파일 (`lib/analytics/`)
 
@@ -169,15 +107,16 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 추적 코드 설치 완료
 
 설치 항목:
-  ✓ Meta Pixel (ID: 1234567890)
-  ✓ Google Ads (ID: AW-xxxxx)
-  ✓ Clarity (ID: xxxxxx)
+  ✓ Meta Pixel
+  ✓ Google Ads + GA4
+  ✓ Clarity
 
-생성된 파일:
+생성/수정된 파일:
+  - app/layout.tsx (<head> 스크립트 삽입)
   - lib/analytics/index.ts
   - lib/analytics/facebook.ts
   - lib/analytics/google-ads.ts
-  - ...
+  - middleware.ts (CSP 도메인 추가)
 
 다음 할 일:
   □ AnalyticsEvent 타입에 프로젝트별 이벤트 추가
