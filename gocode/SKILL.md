@@ -1,6 +1,7 @@
 ---
 name: gocode
 description: "계획 문서 기반으로 전체 구현 실행. 모든 단계를 완료할 때까지 멈추지 않고 구현합니다."
+disable-model-invocation: true
 ---
 
 ## 구현 전 plan 성숙도 게이트 (B — 섣부른 구현 차단)

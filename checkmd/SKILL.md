@@ -1,6 +1,7 @@
 ---
 name: checkmd
 description: "기능 구현 계획 문서(plan 파일) 생성/업데이트. 파일 내 주석/질문을 읽고 Q&A 형식으로 변환하여 문서를 업데이트합니다."
+disable-model-invocation: true
 ---
 
 # checkmd — 기능 구현 계획 문서 생성/업데이트

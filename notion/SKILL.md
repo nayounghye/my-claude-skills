@@ -1,6 +1,7 @@
 ---
 name: notion
 description: 노션용 개발 일일보고서 생성 (plan MD 기반)
+disable-model-invocation: true
 ---
 
 # 노션 일일보고서

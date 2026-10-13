@@ -19,4 +19,5 @@ cp -r ./* ~/.claude/skills/
 | [code-review](./code-review) | `/code-review` | 종합 코드 리뷰 (QA + 보안 + 최적화 + 코드품질) |
 | [gocode](./gocode) | `/gocode` | 계획 문서 기반 전체 구현 실행 |
 | [notion](./notion) | `/notion` | 개발 일일보고서 생성 (노션용) |
+| [push](./push) | `/push` | 주제별 커밋 + 한국어 커밋 컨벤션 + 빌드 검증 후 푸시 |
 | [tracking](./tracking) | `/tracking` | 추적 코드 자동 세팅 (Meta, gtag, Clarity 등) |
